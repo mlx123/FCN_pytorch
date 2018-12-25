@@ -37,6 +37,9 @@ def validate(model,valloader,loss_fcn):
 
     val_loss = 0
     for batch_idx,(data,target) in enumerate(valloader):
+        data = data.cuda()
+        target = target.cuda()
+
         print('validate'+str(batch_idx))
         with torch.no_grad():
             score = model(data)#使用模型处理输入数据得到结果
@@ -82,13 +85,19 @@ def train_epoch(model,optim,loss_fcn,trainloader,valloader,epoch,interval_valida
            epoch:表示这是第几个epoch
     :return:
     """
+    model = model.cuda()
+
+
+
     model.train()
     n_class = len(valloader.dataset.class_names)
     for batch_idx,(data,target) in enumerate(trainloader):
+        data = data.cuda()
+        target = target.cuda()
         print('train' +str(epoch)+str(batch_idx))
         iteration = batch_idx + epoch * len(trainloader)  #将每个batch看做一次iteration,此处表示是第几个iteration
-        # if iteration % interval_validate ==0:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
-        #     validate(model=model,valloader=valloader,loss_fcn=loss_fcn)
+        if iteration % interval_validate ==0:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
+            validate(model=model,valloader=valloader,loss_fcn=loss_fcn)
 
         assert model.training #判断当前是否处于训练模式中
 
