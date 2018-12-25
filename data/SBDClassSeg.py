@@ -10,7 +10,11 @@ import  torch
 import utils
 
 
-def picFulPath(txtPath,rootImg,rootLbl):
+def picFulPath(txtPath,rootImg,rootLbl,
+               destPath='/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ImagAndLal.txt',
+               ImgFix = '.jpg',
+               lblFix = '.mat'
+               ):
     '''
     给定只包含图片文件名的txt和图片所在路径
     参数：txtPath  包含图片文件名的txt的路径  
@@ -20,18 +24,44 @@ def picFulPath(txtPath,rootImg,rootLbl):
     
     '''
     #读取txtpath中的每一行，然后加上rootImag和rootLbl后写入新的txt文档
-    f = open('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ImagAndLal.txt','w')
+    f = open(destPath,'w')
     fh = open(txtPath, 'r')
     #读取txtPath中的每一行，每一行都是图片文件的文件名，在每一行中加上绝对路径
     for line in fh:
         line = line.rstrip()  # 去掉改行最后的回车符号
-        line = rootImg+line+'.jpg'+' '+rootLbl+line+'.mat'+'\n'#此处最好改为文件名的相加，而不是单纯的字符串相加
+        line = rootImg+line+ImgFix+' '+rootLbl+line+lblFix+'\n'#此处最好改为文件名的相加，而不是单纯的字符串相加
         f.write(line)
     f.close()
     fh.close()
 
 
 class SBDClassSeg(data.Dataset):
+
+    class_names = np.array([
+        'background',
+        'aeroplane',
+        'bicycle',
+        'bird',
+        'boat',
+        'bottle',
+        'bus',
+        'car',
+        'cat',
+        'chair',
+        'cow',
+        'diningtable',
+        'dog',
+        'horse',
+        'motorbike',
+        'person',
+        'potted plant',
+        'sheep',
+        'sofa',
+        'train',
+        'tv/monitor',
+    ])
+    mean_bgr = np.array([104.00698793, 116.66876762, 122.67891434])
+
     def __init__(self, txt_path, transforms=None,train=True):#此处train val test（指定此次的数据时用来做什么的，不同用处的数据集图片预处理方法不同，可以传入不同的txt_path即可）的指定应该用union
 
         '''
@@ -55,36 +85,39 @@ class SBDClassSeg(data.Dataset):
         if transforms is None:
 
             def transforms(img,lbl):
-                #T.Resize T.CenterCrop将图片保持纵横比缩放裁剪为同一大小，
-                #T.Tensor,T.Normalize 将图片转为[0,1]的Tensor,并归一化
-                trans = T.Compose([T.Resize(224),T.CenterCrop(224),
+                if train == True:
+                    #T.Resize T.CenterCrop将图片保持纵横比缩放裁剪为同一大小，
+                    #T.Tensor,T.Normalize 将图片转为[0,1]的Tensor,并归一化
+                    transImg = T.Compose([T.Resize(224),T.CenterCrop(224),
                                    T.ToTensor(),
                            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-                img = trans(img)
 
-                #lbl时mat格式，处理参考https://blog.csdn.net/qq_32425195/article/details/85202552
-                lbl = torch.from_numpy(np.array(lbl)).int()
-                lbl[lbl == 255] = 0
-                #T.ToPILImage()将tensor转为PILImage，然后做Resize和CenterCrop处理
-                trans = T.Compose([T.ToPILImage(),T.Resize(224),T.CenterCrop(224),
+                    #lbl时mat格式，处理参考https://blog.csdn.net/qq_32425195/article/details/85202552
+                    #T.ToPILImage()将tensor转为PILImage，然后做Resize和CenterCrop处理
+                    transLbl = T.Compose([T.ToPILImage(),T.Resize(224),T.CenterCrop(224),
                                    T.ToTensor()])
-                lbl = trans(lbl.unsqueeze(0))
-                return img,lbl
+                else:
+                    transImg = T.Compose([T.ToTensor(),
+                                          T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+
+                    transLbl = T.Compose([T.ToPILImage(), T.ToTensor()])
+
+                img = transImg(img)
+                lbl = transLbl(lbl)
+                return img,lbl.long()
 
             def untransforms(img,lbl):
                 #该trans是对已经归一化的tensor处理，得到归一化之前的Tensor
-                trans = T.Compose([T.Normalize([-0.485/0.229,-0.456/0.224,-0.406/0.225],[1/0.229,1/0.224,1/0.225])])
-                imgUntrans = torch.Tensor(img.shape)
-                for i  in range(img.shape[0]):
-                    imgUntrans[i]= trans(img[i])
+                trans = T.Compose(
+                    [T.Normalize([-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.225], [1 / 0.229, 1 / 0.224, 1 / 0.225])])
+                imgUntrans = trans(img)
+                # for i in range(img.shape[0]):
+                #     imgUntrans[i] = trans(img[i])
 
+                return ((255 * imgUntrans).type(torch.ByteTensor).transpose(0, 1).transpose(1, 2)).numpy(), (
+                    lbl.squeeze(0)).numpy()
 
-                return imgUntrans,lbl
-
-
-
-
-             # 常规的数据操作：（裁剪为统一大小,可选T.scale），（数据增强，如随机裁剪等 语义分割时一般不做这个），ToTensor()后+T.Normalize
+            # 常规的数据操作：（裁剪为统一大小,可选T.scale），（数据增强，如随机裁剪等 语义分割时一般不做这个），ToTensor()后+T.Normalize
             if self.train:#如果此次是训练集（训练集和验证集可能读取数据方法一样，但是预处理的过程不一样）
                 self.transforms = transforms
                 self.untransforms = untransforms
@@ -101,9 +134,10 @@ class SBDClassSeg(data.Dataset):
 
         mat = scipy.io.loadmat(lbl_path)
         lbl = mat['GTcls'][0]['Segmentation'][0].astype(np.int32)
-        im,lbl = self.transforms(im,lbl)
 
-        return im,lbl
+        lbl[lbl == 255] = -1
+        lbl = torch.from_numpy(lbl)
+        return self.transforms(im, lbl.unsqueeze(0))
 
     def __len__(self):
         '''
