@@ -33,8 +33,15 @@ class Visualizer(object):
         #with self.writer:
         self.writer.add_image(tag,img_tensor)
         self.writer.file_writer.flush()
+
+    def plot_scalar(self,tag,scalar,xCorn):
+        self.writer.add_scalar(tag, scalar,xCorn)
+        self.writer.file_writer.flush()
     def close(self):
         self.writer.close()
+
+Vis = Visualizer()
+
 
 if __name__ == '__main__':
     V = Visualizer()

@@ -23,6 +23,9 @@ import data
 import models
 import torch.nn.functional as F
 from distutils.version import LooseVersion
+import utils
+
+
 
 def validate(model,valloader,loss_fcn):
     """
@@ -45,6 +48,7 @@ def validate(model,valloader,loss_fcn):
             score = model(data)#使用模型处理输入数据得到结果
 
         loss  = loss_fcn(score,target,weight=None, size_average=False)
+        loss_data = loss.data.item()
         val_loss +=loss/len(data)
 
         imgs = data.data.cpu()
@@ -64,8 +68,11 @@ def validate(model,valloader,loss_fcn):
                 visualizations.append(viz)
 
         #计算模型在验证集的效果
-    metrics = models.label_accuracy_score(label_trues,label_preds,n_class)
+    acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(label_trues,label_preds,n_class)
     val_loss /= len(valloader)
+
+    utils.Vis.plot_scalar('ValLos',loss_data,batch_idx)
+    utils.Vis.plot_scalar('ValMeanIu',mean_iu,None)
 
     model.train()
 
@@ -94,10 +101,11 @@ def train_epoch(model,optim,loss_fcn,trainloader,valloader,epoch,interval_valida
     for batch_idx,(data,target) in enumerate(trainloader):
         data = data.cuda()
         target = target.cuda()
+
         print('train' +str(epoch)+str(batch_idx))
         iteration = batch_idx + epoch * len(trainloader)  #将每个batch看做一次iteration,此处表示是第几个iteration
-        if iteration % interval_validate ==0:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
-            validate(model=model,valloader=valloader,loss_fcn=loss_fcn)
+        # if iteration % interval_validate ==400:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
+        #     validate(model=model,valloader=valloader,loss_fcn=loss_fcn)
 
         assert model.training #判断当前是否处于训练模式中
 
@@ -105,7 +113,7 @@ def train_epoch(model,optim,loss_fcn,trainloader,valloader,epoch,interval_valida
         score = model(data)
         loss  = loss_fcn(score,target,weight=None, size_average=False)
         loss /=len(data)
-
+        loss_data = loss.data.item()
         loss.backward()
         optim.step()
 
@@ -120,7 +128,7 @@ def train_epoch(model,optim,loss_fcn,trainloader,valloader,epoch,interval_valida
         metrics = np.mean(metrics,axis = 0)
 
         #将上述标量可视化
-
+        utils.Vis.plot_scalar('loss2',loss_data,iteration)
         if iteration > max_iter:#如果超过了最大的迭代次数，则退出循环
             break
 
@@ -156,7 +164,7 @@ def train():
                '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/img/',
                '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/cls/')
     train_dataset = data.SBDClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ImagAndLal.txt')
-    trainloader = DataLoader(train_dataset, batch_size=2, shuffle=False, drop_last=True)
+    trainloader = DataLoader(train_dataset, batch_size=4, shuffle=False, drop_last=True)
 
     data.picFulPath('/home/mlxuan/project/DeepLearning/data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/ImageSets/Segmentation/val.txt',
                     '/home/mlxuan/project/DeepLearning/data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/JPEGImages/',
