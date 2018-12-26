@@ -27,6 +27,7 @@ import utils
 
 
 
+
 def validate(model,valloader,loss_fcn):
     """
     用来在验证集上评估该模型，并且根据测试结果调整超参数
@@ -73,7 +74,7 @@ def validate(model,valloader,loss_fcn):
 
     utils.Vis.plot_scalar('ValLos',loss_data,batch_idx)
     utils.Vis.plot_scalar('ValMeanIu',mean_iu,None)
-
+    # utils.ModelSave(model,optim=)
     model.train()
 
 
@@ -239,6 +240,20 @@ def train():
         lr=1.0e-5,
         momentum=0.99,
         weight_decay=0.0005)
+
+    utils.ModelLoad('./output/Model.path',model,optim)
+
+    trainer = models.Trainer(
+        cuda =True,
+        model=model,
+        optimizer=optim,
+        loss_fcn=lossFun,
+        train_loader=trainloader,
+        val_loader=valloader,
+        out='./output/Model.path',
+        max_iter=40000)
+    trainer.train()
+
 
     # Setup Metrics
     ModelEval = models.label_accuracy_score
