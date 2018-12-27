@@ -68,6 +68,8 @@ class Trainer(object):
         self.train_acc = 0
         self.trainMeanIu = 0
 
+        self.best_mean_iu = 0
+
         if interval_validate is None:
             self.interval_validate = len(self.train_loader)
         else:
@@ -85,9 +87,12 @@ class Trainer(object):
         """
         self.model.eval()
         n_class = len(self.val_loader.dataset.class_names)
-
+        label_trues, label_preds = [], []
+        visualizations = []
         val_loss = 0
         for batch_idx, (data, target) in enumerate(self.val_loader):
+            if batch_idx >50:
+                break
             if self.cuda:
                 data = data.cuda()
                 target = target.cuda()
@@ -105,16 +110,16 @@ class Trainer(object):
             lbl_true = target.data.cpu()
 
             # 可视化模型语义分割的效果
-            label_trues, label_preds = [], []
-            visualizations = []
+
             for img, lt, lp in zip(imgs, lbl_true, lbl_pred):
-                img, lt =self.val_loader.dataset.untransforms(img, lt)
+                img, lt =self.val_loader.dataset.untransform(img, lt)
                 label_trues.append(lt)
                 label_preds.append(lp)
-                if len(visualizations) < 9:
+                if len(visualizations) < 15:
                     viz = fcn.utils.visualize_segmentation(
                         lbl_pred=lp, lbl_true=lt, img=img, n_class=n_class)
                     visualizations.append(viz)
+
             # 计算模型在验证集的效果
         acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(label_trues, label_preds, n_class)
         val_loss /= len(self.val_loader)
@@ -125,7 +130,21 @@ class Trainer(object):
         self.valid_acc = acc
         self.valMeanIu = mean_iu
         self.plotModelScalars()
-        utils.ModelSave(model=self.model,optim = self.optim,saveRoot=self.out,epoch= self.epoch,iteration = self.iteration)
+
+
+        #保存相关的数据
+        out = osp.join(self.out, 'visualization_viz')
+        if not osp.exists(out):
+            os.makedirs(out)
+        out_file = osp.join(out, 'iter%012d.jpg' % self.iteration)
+        scipy.misc.imsave(out_file, fcn.utils.get_tile_image(visualizations))
+
+        now = datetime.datetime.now()
+        utils.ModelSave(model=self.model,optim = self.optim,saveRoot=osp.join(self.out,now.strftime('%Y%m%d_%H%M%S.%f')+'checkpoint.pth.tar'),epoch= self.epoch,iteration = self.iteration)
+        if mean_iu > self.best_mean_iu:
+            self.best_mean_iu = mean_iu
+            shutil.copy(osp.join(self.out, now.strftime('%Y%m%d_%H%M%S.%f')+'checkpoint.pth.tar'),
+                        osp.join(self.out, now.strftime('%Y%m%d_%H%M%S.%f')+'model_best.pth.tar'))
 
         self.model.train()
 
@@ -200,6 +219,8 @@ class Trainer(object):
                                 'valid_acc': self.valid_acc, }, self.iteration)
         self.viusal.plot_scalars('MeanIu',{'ValMeanIu': self.valMeanIu,
                                            'TrainMeanIu':self.trainMeanIu}, self.iteration / self.interval_validate)
+
+        self.viusal.plot_scalar('lr',self.optim.param_groups[0]['lr'],self.iteration)
 
     def plotModelImages(self):
         pass

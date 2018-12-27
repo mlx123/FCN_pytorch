@@ -155,13 +155,13 @@ def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     #Setup model
-    model = models.FCN32s()
+    model = models.FCN32s(n_class=5)
     #用预训练的Vgg16网络初始化FCN32s的参数
     vgg16 = models.VGG16(pretrained=True)
     model.copy_params_from_vgg16(vgg16)
 
     # Setup Dataloader,训练集和验证集数据
-    data.picFulPath('/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/train.txt',
+    """data.picFulPath('/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/train.txt',
                '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/img/',
                '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/cls/')
     train_dataset = data.SBDClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ImagAndLal.txt')
@@ -174,7 +174,14 @@ def train():
                     ImgFix='.jpg',lblFix='.png')
 
     val_dataset = data.VOCClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ValImagAndLal.txt',train=False)
-    valloader = DataLoader(val_dataset,batch_size=1,shuffle=False)
+    valloader = DataLoader(val_dataset,batch_size=1,shuffle=False)"""
+
+    train_dataset = data.RSDataClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/Data/trainFullPath.txt')
+    trainloader = DataLoader(train_dataset, batch_size=4, shuffle=False, drop_last=True)
+    val_dataset = data.RSDataClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/Data/validFullPath.txt',train=False)
+    valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+
+
 
 
     # Setup optimizer, lr_scheduler and loss function(优化器、学习率调整策略、损失函数)
@@ -243,7 +250,7 @@ def train():
     #定义学习率调整策略
     scheduler = lr_scheduler.ReduceLROnPlateau(optim, mode='min', patience=0,min_lr=10e-10,eps=10e-8)  # min表示当指标不在降低时，patience表示可以容忍的step次数
 
-    utils.ModelLoad('./output/Model.path',model,optim)
+    utils.ModelLoad('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output/Model.path/20181227_220035.852449model_best.pth.tar',model,optim)
 
     trainer = models.Trainer(
         cuda =True,
@@ -252,9 +259,10 @@ def train():
         loss_fcn=lossFun,
         train_loader=trainloader,
         val_loader=valloader,
-        out='./output/Model.path',
+        out='./output/',
         max_iter=40000,
-        scheduler = scheduler
+        scheduler = scheduler,
+        interval_validate=2000
     )
     trainer.train()#进入训练
 
