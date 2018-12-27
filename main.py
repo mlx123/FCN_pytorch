@@ -15,7 +15,7 @@ import subprocess
 import numpy as np
 import torch
 import fcn
-
+from torch.optim import lr_scheduler
 import yaml
 import sys
 from torch.utils.data import DataLoader
@@ -240,6 +240,8 @@ def train():
         lr=1.0e-5,
         momentum=0.99,
         weight_decay=0.0005)
+    #定义学习率调整策略
+    scheduler = lr_scheduler.ReduceLROnPlateau(optim, mode='min', patience=0,min_lr=10e-10,eps=10e-8)  # min表示当指标不在降低时，patience表示可以容忍的step次数
 
     utils.ModelLoad('./output/Model.path',model,optim)
 
@@ -251,18 +253,13 @@ def train():
         train_loader=trainloader,
         val_loader=valloader,
         out='./output/Model.path',
-        max_iter=40000)
-    trainer.train()
+        max_iter=40000,
+        scheduler = scheduler
+    )
+    trainer.train()#进入训练
 
 
-    # Setup Metrics
-    ModelEval = models.label_accuracy_score
-    for epoch in range(11):
-        #遍历数据集
 
-        train_epoch(model=model,optim=optim,loss_fcn = lossFun,
-                    trainloader = trainloader,valloader=valloader,
-                    epoch = epoch)
 
 if __name__ == '__main__':
     train()

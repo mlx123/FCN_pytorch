@@ -23,7 +23,7 @@ import utils
 
 class Trainer(object):
 
-    def __init__(self, cuda, model, optimizer,loss_fcn,
+    def __init__(self, cuda, model, optimizer,loss_fcn, scheduler,
                  train_loader, val_loader, out, max_iter,
                  size_average=False, interval_validate=None):
         """
@@ -31,6 +31,7 @@ class Trainer(object):
         :param cuda:
         :param model:
         :param optimizer:
+                scheduler:学习率调整策略
         :param loss_fcn:
         :param train_loader:
         :param val_loader:
@@ -44,6 +45,7 @@ class Trainer(object):
 
         self.model = model
         self.optim = optimizer
+        self.scheduler = scheduler
         self.loss_fcn = loss_fcn
 
         self.train_loader = train_loader
@@ -107,6 +109,7 @@ class Trainer(object):
             # 计算模型在验证集的效果
         acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(label_trues, label_preds, n_class)
         val_loss /= len(self.val_loader)
+        self.scheduler(val_loss)
 
         utils.Vis.plot_scalar('ValLos', loss_data, batch_idx)
         utils.Vis.plot_scalar('ValMeanIu', mean_iu, None)
