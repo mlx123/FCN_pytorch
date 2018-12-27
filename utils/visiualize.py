@@ -37,6 +37,11 @@ class Visualizer(object):
     def plot_scalar(self,tag,scalar,xCorn):
         self.writer.add_scalar(tag, scalar,xCorn)
         self.writer.file_writer.flush()
+
+    def plot_scalars(self,mainTag,scalarDict,xCorn):
+        self.writer.add_scalars(main_tag=mainTag, tag_scalar_dict=scalarDict,global_step=xCorn)
+        self.writer.file_writer.flush()
+
     def close(self):
         self.writer.close()
 

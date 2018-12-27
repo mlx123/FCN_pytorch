@@ -21,6 +21,9 @@ import utils
 
 
 
+
+
+
 class Trainer(object):
 
     def __init__(self, cuda, model, optimizer,loss_fcn, scheduler,
@@ -56,7 +59,14 @@ class Trainer(object):
         self.iteration = 0
         self.max_iter = max_iter
         self.best_mean_iu = 0
+        self.viusal = utils.Visualizer()
 
+        self.valid_loss =  0
+        self.valid_acc = 0
+        self.valMeanIu = 0
+        self.train_loss = 0
+        self.train_acc = 0
+        self.trainMeanIu = 0
 
         if interval_validate is None:
             self.interval_validate = len(self.train_loader)
@@ -105,20 +115,22 @@ class Trainer(object):
                     viz = fcn.utils.visualize_segmentation(
                         lbl_pred=lp, lbl_true=lt, img=img, n_class=n_class)
                     visualizations.append(viz)
-
             # 计算模型在验证集的效果
         acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(label_trues, label_preds, n_class)
         val_loss /= len(self.val_loader)
-        self.scheduler(val_loss)
+        self.scheduler.step(val_loss)
 
-        utils.Vis.plot_scalar('ValLos', loss_data, batch_idx)
-        utils.Vis.plot_scalar('ValMeanIu', mean_iu, None)
+        #可视化模型的效果
+        self.valid_loss = val_loss
+        self.valid_acc = acc
+        self.valMeanIu = mean_iu
+        self.plotModelScalars()
         utils.ModelSave(model=self.model,optim = self.optim,saveRoot=self.out,epoch= self.epoch,iteration = self.iteration)
+
         self.model.train()
 
 
     def train_epoch(self):
-
 
             if self.cuda:
                 self.model = self.model.cuda()
@@ -145,19 +157,23 @@ class Trainer(object):
                 loss.backward()
                 self.optim.step()
 
-                # 做几次或者每次都更新统计指标并可视化
-                metrics = []
-                lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]  # 将该像素得分最高的类看做该像素所属于的类别，所有的像素组成分类图
-                lbl_true = target.data.cpu().numpy()  # 人为标定的分类图
-                acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(
-                    lbl_true, lbl_pred, n_class=n_class)  # 这4个参数都可以作为模型在训练集的评价指标
+                # 做几次或者每次都更新统计指标并可视化,此处时每做10次可视化一下效果
+                if batch_idx%10 ==0:
+                    metrics = []
+                    lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]  # 将该像素得分最高的类看做该像素所属于的类别，所有的像素组成分类图
+                    lbl_true = target.data.cpu().numpy()  # 人为标定的分类图
+                    acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(
+                        lbl_true, lbl_pred, n_class=n_class)  # 这4个参数都可以作为模型在训练集的评价指标
 
-                metrics.append((acc, acc_cls, mean_iu, fwavacc))
-                metrics = np.mean(metrics, axis=0)
+                    metrics.append((acc, acc_cls, mean_iu, fwavacc))
+                    metrics = np.mean(metrics, axis=0)
 
-                # 将上述标量可视化
-                utils.Vis.plot_scalar('loss2', loss_data, iteration)
-
+                    # 将上述标量可视化
+                    self.train_loss = loss_data
+                    self.iteration = iteration
+                    self.train_acc = acc
+                    self.TrainMeanIu = mean_iu
+                    self.plotModelScalars()
 
     def train(self):
         max_epoch = int(math.ceil(1. * self.max_iter / len(self.train_loader)))
@@ -166,3 +182,24 @@ class Trainer(object):
             self.train_epoch()
             if self.iteration >= self.max_iter:# 如果超过了最大的迭代次数，则退出循环
                 break
+
+
+
+    #模型的效果可视化
+    def plotModelScalars(self):
+        """
+        plotModelPer:绘制模型的相关的标量,
+        将train_loss,valid_loss,train_acc,valid_acc绘制到一张图上
+        :return:
+        """
+        # w =utils.visiualize.Visualizer()
+
+        self.viusal.plot_scalars('modelPer', {'train_loss': self.train_loss,
+                                'valid_loss': self.valid_loss,
+                                'train_acc': self.train_acc,
+                                'valid_acc': self.valid_acc, }, self.iteration)
+        self.viusal.plot_scalars('MeanIu',{'ValMeanIu': self.valMeanIu,
+                                           'TrainMeanIu':self.trainMeanIu}, self.iteration / self.interval_validate)
+
+    def plotModelImages(self):
+        pass
