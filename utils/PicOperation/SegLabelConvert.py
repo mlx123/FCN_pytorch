@@ -27,7 +27,7 @@ from PIL import Image
 convertTable = {0:0,1:4,2:1,3:1,4:1,5:1,6:1,7:3,8:2,9:1}
 srcLabel = './DJI_0200_31.png'
 
-def labelConvert(srcLabel,convertDict):
+def labelConvert(srcLabel,convertDict,dstPath):
     """
 
     :param srcLabel:原标签
@@ -48,10 +48,21 @@ def labelConvert(srcLabel,convertDict):
     imgArr2 = [[convertDict[imgArr[i][j][0]] for j in range(len(imgArr[i]))] for i in range(len(imgArr))]
 
     imgLable2 = Image.fromarray(np.uint8(imgArr2))
-    imgLable2.save(basename+'_2.'+ext,'PNG')
+    imgLable2.save(os.path.join(dstPath,basename+'.'+ext),'PNG')
 
     imgLableVis = Image.fromarray(np.uint8(imgArr2)*50)
-    imgLableVis.save(basename+'_2Vis.'+ext,'PNG')
+    imgLableVis.save(os.path.join(dstPath,'vis',basename+'Vis.'+ext),'PNG')
 
 
-labelConvert(srcLabel,convertTable)
+#遍历某个目录下所有的文件，生成由文件名组成的链表（即该目录下包含了所有我们想要遍历的文件，其他文件都不在其中）　　
+def files2List(rootDir):
+    imgs = [os.path.join(rootDir,img)for img in os.listdir(rootDir)]
+    return imgs
+#确保要遍历的目录下只包含我们想要的文件
+imgs = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
+
+
+if __name__ == '__main__':
+
+    for srcLabel in imgs:
+         labelConvert(srcLabel,convertTable,'/home/mlxuan/project/DeepLearning/data/image_Segmentation/convert1')

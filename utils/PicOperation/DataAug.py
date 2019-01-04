@@ -5,7 +5,8 @@ import random
 import os
 import numpy as np
 from tqdm import tqdm
-"""
+from SegLabelConvert import files2List
+""" 
 将输入图片做随机切割，即随机生成x,y坐标，然后抠出该坐标下256*256的小图，并做以下数据增强操作：
 
     原图和label图都需要旋转：90度，180度，270度
@@ -79,14 +80,21 @@ def data_augment(xb, yb):
     return xb, yb
 
 
-def creat_dataset(image_num=50000, mode='original'):
+def creat_dataset(image_sets,picDic,labelDic,image_num=5000, mode='original'):
+    """
+
+    :param image_sets: 包含了所有image的name的的列表，用于遍历所有的image,其中pic与label的命名最好相同，方便遍历
+    :param image_num: 数据增强时要生成的图片的个数
+    :param mode: 除了随机裁剪，是否做数据增强
+    :return:
+    """
     print('creating dataset...')
     image_each = image_num / len(image_sets)
     g_count = 0
     for i in tqdm(range(len(image_sets))):
         count = 0
-        src_img = cv2.imread('./data/src/' + image_sets[i])  # 3 channels
-        label_img = cv2.imread('./data/road_label/' + image_sets[i], cv2.IMREAD_GRAYSCALE)  # single channel
+        src_img = cv2.imread(os.path.join(picDic,image_sets[i])+'.BMP') # 3 channels
+        label_img = cv2.imread(os.path.join(labelDic,image_sets[i])+'.png', cv2.IMREAD_GRAYSCALE)  # single channel
         X_height, X_width, _ = src_img.shape
         while count < image_each:
             random_width = random.randint(0, X_width - img_w - 1)
@@ -96,15 +104,19 @@ def creat_dataset(image_num=50000, mode='original'):
             if mode == 'augment':
                 src_roi, label_roi = data_augment(src_roi, label_roi)
 
-            visualize = np.zeros((256, 256)).astype(np.uint8)
+
             visualize = label_roi * 50
 
-            cv2.imwrite(('./unet_train/visualize/%d.png' % g_count), visualize)
-            cv2.imwrite(('./unet_train/road/src/%d.png' % g_count), src_roi)
-            cv2.imwrite(('./unet_train/road/label/%d.png' % g_count), label_roi)
+            cv2.imwrite(('/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/vis/r%d.png' % g_count), visualize)
+            cv2.imwrite(('/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/src/r%d.BMP' % g_count), src_roi)
+            cv2.imwrite(('/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/label/r%d.png' % g_count), label_roi)
             count += 1
             g_count += 1
 
 
 if __name__ == '__main__':
-    creat_dataset(mode='augment')
+    image_sets = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
+    imageSetsBaseame = [os.path.split(image)[1].split('.')[0] for image in image_sets]#提取路径中的文件名生成新的链表
+    creat_dataset(image_sets = imageSetsBaseame,
+                  picDic= '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2',
+                  labelDic= '/home/mlxuan/project/DeepLearning/data/image_Segmentation/convert1',mode='augment')

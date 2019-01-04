@@ -51,13 +51,13 @@ def Split2Images(src,label,rownum,colnum,dstImagepath,dstLabelPath,dstImageTxtPa
         print('Image and label are not match ')
 
 
-Split2Images('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0178.JPG',
-             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/annotations/DJI_0178.png',
+Split2Images('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0200.JPG',
+             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/annotations/DJI_0200.png',
              10,10,
-             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split',
-             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split',
-             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split/image.txt',
-             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split/label.txt',
+             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2',
+             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2',
+             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2/image.txt',
+             '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2/label.txt',
              'data/images/Split/',
              'data/images/Split/'
              )
