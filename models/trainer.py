@@ -200,6 +200,7 @@ class Trainer(object):
             self.epoch = epoch
             self.train_epoch()
             if self.iteration >= self.max_iter:# 如果超过了最大的迭代次数，则退出循环
+                print("iteration is the %d,quit",self.iteration)
                 break
 
 
