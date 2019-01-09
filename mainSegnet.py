@@ -25,128 +25,47 @@ import models
 import torch.nn.functional as F
 from distutils.version import LooseVersion
 import utils
+import scipy.misc
 
 
 
-
-def validate(model,valloader,loss_fcn):
+#需要重写testDataloader的代码，步骤：导入模型 准备输入数据，遍历输入数据（model(input),处理模型的输出）
+def valModel(modelPth,valImagLoader,outImg,cuda=True):
     """
-    用来在验证集上评估该模型，并且根据测试结果调整超参数
-    :param model: 用来验证的模型
-    val_loader:用来验证模型的数据集
-    loss_fcn:model的损失函数
+
+    :param ModelPth: 想要预测的模型的路径
+    :param Img: 用于预测的输入图像
+    :param OutImg: 预测后的输出图像
     :return:
     """
+    #导入模型
+    model = models.segnet(n_classes=5)
+    utils.ModelLoad(loadRoot=modelPth,model=model)
+    # import data
+    testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/test.txt',
+                                       train=False,test = True)
+    testLoader = DataLoader(testDataset, batch_size=1, shuffle=False)
+
+
     model.eval()
-    n_class = len(valloader.dataset.class_names)
+    #读入输入图像，然后用模型去预测
+     #将ValImgLoader做成loader
 
-    val_loss = 0
-    for batch_idx,(data,target) in enumerate(valloader):
-        data = data.cuda()
-        target = target.cuda()
 
-        print('validate'+str(batch_idx))
+    for batch_idx, (datas, target) in enumerate(testLoader):
+        if cuda:#是否使用GPU
+            datas = datas.cuda()
+            model.cuda()
+            # target = target.cuda()
         with torch.no_grad():
-            score = model(data)#使用模型处理输入数据得到结果
-
-        loss  = loss_fcn(score,target,weight=None, size_average=False)
-        loss_data = loss.data.item()
-        val_loss +=loss/len(data)
-
-        imgs = data.data.cpu()
-        lbl_pred = score.data.max(1)[1].cpu().numpy()[:,:,:]
-        lbl_true = target.data.cpu()
-
-        #可视化模型语义分割的效果
-        label_trues, label_preds = [], []
-        visualizations = []
-        for img,lt,lp in zip(imgs,lbl_true,lbl_pred):
-            img,lt = valloader.dataset.untransforms(img,lt)
-            label_trues.append(lt)
-            label_preds.append(lp)
-            if len(visualizations) <9:
-                viz  = fcn.utils.visualize_segmentation(
-                    lbl_pred = lp,lbl_true = lt,img = img,n_class = n_class)
-                visualizations.append(viz)
-
-        #计算模型在验证集的效果
-    acc, acc_cls, mean_iu, fwavacc = models.label_accuracy_score(label_trues,label_preds,n_class)
-    val_loss /= len(valloader)
-
-    utils.Vis.plot_scalar('ValLos',loss_data,batch_idx)
-    utils.Vis.plot_scalar('ValMeanIu',mean_iu,None)
-    # utils.ModelSave(model,optim=)
-    model.train()
-
-
-
-
-
-
-def train_epoch(model,optim,loss_fcn,trainloader,valloader,epoch,interval_validate =4000,max_iter=40000):
-    """
-    训练一个epoch
-    :param model: 用于训练的模型
-            optim:训练时所采用的优化器
-            loss_fcn:训练时采用的损失函数
-           trainloader:用于训练的数据集
-           valloader:用于验证的数据集
-           epoch:表示这是第几个epoch
-    :return:
-    """
-    model = model.cuda()
-
-
-
-    model.train()
-    n_class = len(valloader.dataset.class_names)
-    for batch_idx,(data,target) in enumerate(trainloader):
-        data = data.cuda()
-        target = target.cuda()
-
-        print('train' +str(epoch)+str(batch_idx))
-        iteration = batch_idx + epoch * len(trainloader)  #将每个batch看做一次iteration,此处表示是第几个iteration
-        # if iteration % interval_validate ==400:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
-        #     validate(model=model,valloader=valloader,loss_fcn=loss_fcn)
-
-        assert model.training #判断当前是否处于训练模式中
-
-        optim.zero_grad()
-        score = model(data)
-        loss  = loss_fcn(score,target,weight=None, size_average=False)
-        loss /=len(data)
-        loss_data = loss.data.item()
-        loss.backward()
-        optim.step()
-
-        #做几次或者每次都更新统计指标并可视化
-        metrics = []
-        lbl_pred = score.data.max(1)[1].cpu().numpy()[:,:,:]#将该像素得分最高的类看做该像素所属于的类别，所有的像素组成分类图
-        lbl_true = target.data.cpu().numpy()#人为标定的分类图
-        acc,acc_cls,mean_iu,fwavacc = models.label_accuracy_score(
-            lbl_true,lbl_pred,n_class=n_class)#这4个参数都可以作为模型在训练集的评价指标
-
-        metrics.append((acc,acc_cls,mean_iu,fwavacc))
-        metrics = np.mean(metrics,axis = 0)
-
-        #将上述标量可视化
-        utils.Vis.plot_scalar('loss2',loss_data,iteration)
-        if iteration > max_iter:#如果超过了最大的迭代次数，则退出循环
-            break
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            score = model(datas)  # 使用模型处理输入数据得到结果
+        imgs = datas.data.cpu()
+        img, lt = testLoader.dataset.untransform(imgs[0])
+        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+        _ = fcn.utils.label2rgb(lbl=lbl_pred,img = img)
+        scipy.misc.imsave('./t.jpg',_[0])
+        # lbl_true = target.datas.cpu()
+    #将预测后的结果保存为输出图像
 
 
 
@@ -239,5 +158,5 @@ def train():
 
 
 if __name__ == '__main__':
-    train()
-
+    # train()
+    valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190105_174614.066962model_best.pth.tar','','',cuda=True)

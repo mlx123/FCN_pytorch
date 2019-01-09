@@ -50,7 +50,14 @@ def Split2Images(src,label,rownum,colnum,dstImagepath,dstLabelPath,dstImageTxtPa
     else:
         print('Image and label are not match ')
 
+if __name__ == '__main__':
 
+    SplitImage(src='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0214.JPG',
+               rownum = 2, colnum = 2,
+               dstpath ='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2000*1500/',
+               dstTxtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2000*1500/1.txt')
+
+"""   
 Split2Images('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0200.JPG',
              '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/annotations/DJI_0200.png',
              10,10,
@@ -62,7 +69,7 @@ Split2Images('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segme
              'data/images/Split/'
              )
 
-
+"""
 
 """src = input('请输入图片文件路径：')
 if os.path.isfile(src):
