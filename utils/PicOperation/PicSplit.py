@@ -2,7 +2,7 @@ import os
 from PIL import Image
 import numpy as np
 from torchvision import transforms as T
-#保存时将原始数据保存为bmp格式，可以防止数据保存时失真。如果保存为ｊｐｇ格式，则数据有压缩丢失等
+#将给定的图片按照给定的行列数切割  保存时将原始数据保存为bmp格式，可以防止数据保存时失真。如果保存为ｊｐｇ格式，则数据有压缩丢失等
 def SplitImage(src, rownum, colnum, dstpath,dstTxtPath,Prefix = ''):
     img = Image.open(src)
     imgArray = np.asarray(img)

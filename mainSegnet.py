@@ -39,7 +39,7 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
     :return:
     """
     #导入模型
-    model = models.segnet(n_classes=5)
+    model = models.segnet(n_classes=10)
     utils.ModelLoad(loadRoot=modelPth,model=model)
     # import data
     testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/test.txt',
@@ -71,36 +71,23 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
 
 
 def train():
+    # Setup Dataloader,训练集和验证集数据,决定了如分类类别等
+    train_dataset = data.UAVDataClassSeg(
+        txt_path='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/trainFull.txt')
+    trainloader = DataLoader(train_dataset, batch_size=12, shuffle=True, drop_last=True)
+    val_dataset = data.UAVDataClassSeg(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/validFull.txt', train=False)
+    valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+
     # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+
     #Setup model
-    model = models.segnet(n_classes=5)
+    model = models.segnet(n_classes=len(val_dataset.class_names))
     #用预训练的Vgg16网络初始化FCN32s的参数
     model.init_vgg16_params(torchvision.models.vgg16(pretrained=True))
-
-    # Setup Dataloader,训练集和验证集数据
-    """data.picFulPath('/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/train.txt',
-               '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/img/',
-               '/home/mlxuan/project/DeepLearning/data/benchmark/benchmark_RELEASE/dataset/cls/')
-    train_dataset = data.SBDClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ImagAndLal.txt')
-    trainloader = DataLoader(train_dataset, batch_size=4, shuffle=False, drop_last=True)
-
-    data.picFulPath('/home/mlxuan/project/DeepLearning/data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/ImageSets/Segmentation/val.txt',
-                    '/home/mlxuan/project/DeepLearning/data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/JPEGImages/',
-                    '/home/mlxuan/project/DeepLearning/data/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/SegmentationClass/',
-                    destPath='/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ValImagAndLal.txt',
-                    ImgFix='.jpg',lblFix='.png')
-
-    val_dataset = data.VOCClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/ValImagAndLal.txt',train=False)
-    valloader = DataLoader(val_dataset,batch_size=1,shuffle=False)"""
-
-    train_dataset = data.UAVDataClassSeg(txt_path = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/trainFull.txt')
-    trainloader = DataLoader(train_dataset, batch_size=8, shuffle=True, drop_last=True)
-    val_dataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/validFull.txt',train=False)
-    valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
-
-
 
 
     # Setup optimizer, lr_scheduler and loss function(优化器、学习率调整策略、损失函数)
@@ -148,9 +135,9 @@ def train():
         train_loader=trainloader,
         val_loader=valloader,
         out='./output_segnet/',
-        max_iter=40000,
+        max_iter=100000,
         scheduler = scheduler,
-        interval_validate=2000
+        interval_validate=800
     )
     trainer.train()#进入训练
 
@@ -159,4 +146,4 @@ def train():
 
 if __name__ == '__main__':
     # train()
-    valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190105_174614.066962model_best.pth.tar','','',cuda=True)
+    valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)

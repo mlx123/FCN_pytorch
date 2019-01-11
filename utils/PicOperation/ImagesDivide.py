@@ -134,31 +134,50 @@ def picFulPath(txtPath, rootImg, rootLbl,
 
 if __name__ == '__main__':
 
-    """dataset_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/'
+    """
+    #用法
+    指定各个文件夹：
+    数据所在文件夹dataset_dir，该文件夹下同时包含了几个文件夹 分别存放原图img和标准图label和可视图vis
+    要生成的训练集 验证集 测试集的文件夹 train_dir valid_dir  test_dir
+    dataset_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/'
     train_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/'
     valid_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/'
     test_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/test/'
-
+    
+    #制定训练集 验证集 测试集 的划分比例
     train_per = 0.8
     valid_per = 0.2
-
+    
+    #图片划分
+    splitPicture(dataset_dir, train_dir, valid_dir, test_dir, 0.8, 0.2)
+    
+    
     train_txt_path = '../Data/train.txt'
     valid_txt_path = '../Data/valid.txt'
 
     #这些代码只用执行一次，用来生成img lbl的txt文档
-    splitPicture(dataset_dir, train_dir, valid_dir, test_dir, 0.8, 0.2)
+    
     """
+    """
+    dataset_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/'
+    train_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/'
+    valid_dir = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/'
+    test_dir =  '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/test/'
+    train_per = 0.9
+    valid_per = 0.1
+    splitPicture(dataset_dir, train_dir, valid_dir, test_dir, 0.9, 0.1)
+    """
+    #遍历给定目录下的所有的png文件和BMP文件，生成对应的txt
+    gen_txt(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/train.txt', imgDir='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/src')
+    gen_txt(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/valid.txt', imgDir='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/src')
 
-    gen_txt(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/train.txt', imgDir='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/src')
-    gen_txt(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/valid.txt', imgDir='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/src')
+    #根据目录名 生成img+label的dataAug/完全路径
+    picFulPath(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/train.txt',
+               rootImg ='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/src/',
+               rootLbl='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/label/',
+               destPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/trainFull.txt')
 
-
-    picFulPath(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/train.txt',
-               rootImg ='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/src/',
-               rootLbl='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/label/',
-               destPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/train/trainFull.txt')
-
-    picFulPath(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/valid.txt',
-               rootImg='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/src/',
-               rootLbl='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/label/',
-               destPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/valid/validFull.txt')
+    picFulPath(txtPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/valid.txt',
+               rootImg='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/src/',
+               rootLbl='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/label/',
+               destPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/validFull.txt')

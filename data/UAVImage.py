@@ -19,12 +19,26 @@ from torch.utils.data import DataLoader
 import fcn
 
 class UAVDataClassSeg(data.Dataset):
+    """
     class_names = np.array([
         'background',
         'vegetation',
         'building',
         'water',
         'road' ])
+        """
+    class_names = np.array([
+        'background',
+        'Road',
+        'Tree',
+        'Grass',
+        'GrassAndSoil',
+        'Soil',
+        'withered grass',
+        'Water',
+        'Building',
+        'GreenHouse'
+    ])
     mean_bgr = np.array([104.00698793, 116.66876762, 122.67891434])
 
 

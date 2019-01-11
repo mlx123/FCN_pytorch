@@ -91,7 +91,7 @@ class Trainer(object):
         visualizations = []
         val_loss = 0
         for batch_idx, (data, target) in enumerate(self.val_loader):
-            if batch_idx >50:
+            if batch_idx >1000:
                 break
             if self.cuda:
                 data = data.cuda()
@@ -161,7 +161,7 @@ class Trainer(object):
                     data = data.cuda()
                     target = target.cuda()
 
-                print('train' + str(self.epoch) + str(batch_idx))
+                print('train' + ' epoch:'+str(self.epoch) + '   batch_idx:'+str(batch_idx))
                 iteration = batch_idx + self.epoch * len(self.train_loader)  # 将每个batch看做一次iteration,此处表示是第几个iteration
                 if iteration % self.interval_validate ==0:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
                     self.validate()
