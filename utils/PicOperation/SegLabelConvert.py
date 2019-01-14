@@ -58,11 +58,11 @@ def labelConvert(srcLabel,convertDict,dstPath):
 def files2List(rootDir):
     imgs = [os.path.join(rootDir,img)for img in os.listdir(rootDir)]
     return imgs
-#确保要遍历的目录下只包含我们想要的文件
-imgs = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
+
 
 
 if __name__ == '__main__':
-
+    # 确保要遍历的目录下只包含我们想要的文件
+    imgs = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
     for srcLabel in imgs:
          labelConvert(srcLabel,convertTable,'/home/mlxuan/project/DeepLearning/data/image_Segmentation/convert1')

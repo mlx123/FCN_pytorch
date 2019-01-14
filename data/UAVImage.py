@@ -17,6 +17,7 @@ from torch.utils import data
 from torchvision import transforms as T
 from torch.utils.data import DataLoader
 import fcn
+import scipy.misc
 
 class UAVDataClassSeg(data.Dataset):
     """
@@ -136,7 +137,21 @@ class UAVDataClassSeg(data.Dataset):
         :return:
         '''
         return len(self.imgs)
+
+
+
+#标注后的RGBA转单通道Grey 并可视化
+def RGBA2Grey(srcPath,dstPath,dstVisPath = None):
+    with Image.open(srcPath) as srcImage:
+        imgArr = np.array(srcImage)
+        labelImg = np.uint8([[imgArr[i][j][0] for j in range(len(imgArr[i]))] for i in range(len(imgArr))])
+        Image .fromarray(labelImg).save(fp=dstPath,format='PNG')
+        _ = fcn.utils.label2rgb(lbl=labelImg,label_names=['b','R','T','G','A','S','w','W','B','H'])
+        # if dstVisPath not None:
+        scipy.misc.imsave(dstVisPath,_)
 if __name__ == '__main__':
+    RGBA2Grey('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/utils/PicOperation/splice.png',
+              './dst.png','./dstVis.png')
     """
     测试数据集类是否正确，
     初始化

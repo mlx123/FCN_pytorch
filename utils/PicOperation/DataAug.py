@@ -6,6 +6,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 from SegLabelConvert import files2List
+import PIL.Image
 """ 
 将输入图片做随机切割，即随机生成x,y坐标，然后抠出该坐标下256*256的小图，并做以下数据增强操作：
 
@@ -97,7 +98,7 @@ def creat_dataset(image_sets,picDic,labelDic,image_num=10000, mode='original'):
     for i in tqdm(range(len(image_sets))):
         count = 0
         src_img = cv2.imread(os.path.join(picDic,image_sets[i])+'.BMP') # 3 channels
-        imgArr = cv2.imread(os.path.join(labelDic,image_sets[i])+'.png', cv2.IMREAD_UNCHANGED)  # single channel
+        imgArr = cv2.imread(os.path.join(labelDic,image_sets[i])+'.png', cv2.IMREAD_UNCHANGED)  # 图片原来是4通道则读成4通道
         label_img = np.uint8([[imgArr[i][j][2] for j in range(len(imgArr[i]))] for i in range(len(imgArr))])
         X_height, X_width, _ = src_img.shape
         while count < image_each:
@@ -118,6 +119,27 @@ def creat_dataset(image_sets,picDic,labelDic,image_num=10000, mode='original'):
             g_count += 1
 
 
+def resampling(image_sets,width,height,picPath,dstPath):
+    f = open(os.path.join(dstPath,'resampleWidth*Height.txt'),'w')
+
+    for i in tqdm(range(len(image_sets))):
+        img = PIL.Image.open(os.path.join(picPath,image_sets[i]+'.JPG'))
+        imgResized = img.resize((width, height),PIL.Image.ANTIALIAS)  # 和读入图像的格式相同，也是先width后height,ANTIALIAS是平滑滤波
+        # NEAREST：最近滤波。从输入图像中选取最近的像素作为输出像素。它忽略了所有其他的像素。
+        # #BILINEAR：双线性滤波。在输入图像的2x2矩阵上进行线性插值。注意：PIL的当前版本，做下采样时该滤波器使用了固定输入模板。
+        # #BICUBIC：双立方滤波。在输入图像的4x4矩阵上进行立方插值。注意：PIL的当前版本，做下采样时该滤波器使用了固定输入模板。
+        # #ANTIALIAS：平滑滤波。这是PIL 1.1.3版本中新的滤波器。对所有可以影响输出像素的输入像素进行高质量的重采样滤波，以计算输出像素值。在当前的PIL版本中，这个滤波器只用于改变尺寸和缩略图方法。
+        # #注意：在当前的PIL版本中，ANTIALIAS滤波器是下采样（例如，将一个大的图像转换为小图）时唯一正确的滤波器。BILIEAR和BICUBIC滤波器使用固定的输入模板，用于固定比例的几何变换和上采样是最好的。
+        imgResized.save(os.path.join(dstPath,image_sets[i]+'.JPEG'))
+
+        line = os.path.join(dstPath,image_sets[i]+'.JPEG') + '\n'
+        f.write(line)
+
+    f.close()
+
+
+
+
 if __name__ == '__main__':
     """
     用法如下：
@@ -131,12 +153,16 @@ if __name__ == '__main__':
                   labelDic= '/home/mlxuan/project/DeepLearning/data/image_Segmentation/convert1',mode='augment')
                   
                   """
-
-    #1.将目录下的文件生成列表
-    image_sets = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
-    #2.os.path.split(image)[1].split('.')[0]for image in image_sets  获取文件名的基础名，不要扩展名
-    imageSetsBaseame = [os.path.split(image)[1].split('.')[0] for image in image_sets]  # 提取路径中的文件名生成新的链表
-    #3.将数据增广，指定要做数据增广的pic和label做在的文件夹
-    creat_dataset(image_sets=imageSetsBaseame,
+    if 0:
+        #1.将目录下的文件生成列表
+        image_sets = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/labels')
+        #2.os.path.split(image)[1].split('.')[0]for image in image_sets  获取文件名的基础名，不要扩展名
+        imageSetsBaseame = [os.path.split(image)[1].split('.')[0] for image in image_sets]  # 提取路径中的文件名生成新的链表
+        #3.将数据增广，指定要做数据增广的pic和label做在的文件夹
+        creat_dataset(image_sets=imageSetsBaseame,
                   picDic='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2',
                   labelDic='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split2', mode='augment')
+
+    image_sets = files2List('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/allJpg')
+    imageSetsBaseame = [os.path.split(image)[1].split('.')[0] for image in image_sets]#提取路径中的文件名生成新的链表
+    resampling(image_sets=imageSetsBaseame, width=1000, height=3000//4, picPath='/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/allJpg', dstPath = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Resample200*1500')

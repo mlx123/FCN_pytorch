@@ -29,6 +29,53 @@ import scipy.misc
 
 
 
+
+
+def ModelStatics(modelPth,valImagLoader,outImg,cuda=True):
+    # 导入模型
+    model = models.segnet(n_classes=10)
+    utils.ModelLoad(loadRoot=modelPth, model=model)
+    # import data
+    val_dataset = data.UAVDataClassSeg(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/trainFull.txt', train=False)
+    valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+
+
+    model.eval()
+    # 读入输入图像，然后用模型去预测
+    # 将ValImgLoader做成loader
+    histAdd = np.zeros((10,10))
+    histAdd = histAdd.astype(np.uint64)
+    #从data获得原图 从target获得label
+    for batch_idx, (datas, target) in enumerate(valloader):
+        if cuda:  # 是否使用GPU
+            datas = datas.cuda()
+            model.cuda()
+            # target = target.cuda()
+        with torch.no_grad():
+            score = model(datas)  # 使用模型处理输入数据得到结果
+        imgs = datas.data.cpu()
+        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+        lbl_true = target.data.cpu()
+
+        img, lt = valloader.dataset.untransform(imgs[0], lbl_true[0])
+        hist = fcn.utils._fast_hist(label_true=lt, label_pred=lbl_pred[0], n_class=10)
+        # np.savetxt('hist.txt',hist,fmt='%10.0f', header='a', comments=str(1))
+        histAdd = histAdd+hist
+        # _ = fcn.utils.label2rgb(lbl=lbl_pred, img=img)
+        # scipy.misc.imsave('./t5.jpg', _[0])
+        # lbl_true = target.datas.cpu()
+    # 将预测后的结果保存为输出图像
+    np.savetxt('histAddTrain.txt', histAdd, fmt='%20.0f')
+    """
+    如何分析得到的混淆矩阵：
+    static = np.loadtxt('./histAdd.txt',dtype = np.uint64)读入混淆矩阵为numpy astray
+    static.max()获得最大值
+    t1 = [[static[i][j] if i!=j else 0for i in range(10)]for j in range(10)]
+    t2 =np.array(t1)将混淆矩阵对角线元素为0
+    t3 = np.where(t2 == np.max(t2)) 获得最大值的航和列
+    t4 = np.sort(t2,axis=None)对混淆矩阵排序
+    """
 #需要重写testDataloader的代码，步骤：导入模型 准备输入数据，遍历输入数据（model(input),处理模型的输出）
 def valModel(modelPth,valImagLoader,outImg,cuda=True):
     """
@@ -42,7 +89,7 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
     model = models.segnet(n_classes=10)
     utils.ModelLoad(loadRoot=modelPth,model=model)
     # import data
-    testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/test.txt',
+    testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Resample200*1500/resampleWidth*Height.txt',
                                        train=False,test = True)
     testLoader = DataLoader(testDataset, batch_size=1, shuffle=False)
 
@@ -62,8 +109,8 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
         imgs = datas.data.cpu()
         img, lt = testLoader.dataset.untransform(imgs[0])
         lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
-        _ = fcn.utils.label2rgb(lbl=lbl_pred,img = img)
-        scipy.misc.imsave('./t.jpg',_[0])
+        _ = fcn.utils.label2rgb(lbl=lbl_pred[0],img = img,label_names=['b','R','T','G','A','S','w','W','B','H'])
+        scipy.misc.imsave(os.path.join('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/al',str(batch_idx)+'.jpg'),_)
         # lbl_true = target.datas.cpu()
     #将预测后的结果保存为输出图像
 
@@ -146,4 +193,5 @@ def train():
 
 if __name__ == '__main__':
     # train()
-    valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
+    # ModelStatics('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
+   valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
