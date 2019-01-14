@@ -19,6 +19,131 @@ from torch.utils.data import DataLoader
 import fcn
 import scipy.misc
 
+
+
+
+
+
+
+
+
+def resample(imgPath,lblPath):
+    img = Image.open(imgPath)
+    imgResized = img.resize((700, 375), Image.ANTIALIAS)
+    imgResized.save('./2.JPEG')
+    img = Image.open(lblPath)
+    lblImmg2 = np.array(img)
+
+    labelImg = np.array(img.resize((700, 375), Image.NEAREST))
+
+    # Image.fromarray(labelImg).save(fp=ds, format='PNG')
+    _ = fcn.utils.label2rgb(lbl=labelImg, img = np.asarray(imgResized),label_names=['b', 'R', 'T', 'G', 'A', 'S', 'w', 'W', 'B', 'H'])
+    # if dstVisPath not None:
+    scipy.misc.imsave('./3.png', _)
+
+
+def randomResampleTrans(img,lbl):
+    height = random.randint(280,3000)
+    width = random.randint(int(0.7*height),int(min(2*height,4000)))
+    imgResized = img.resize((width, height), Image.ANTIALIAS)
+    labelImg = lbl.resize((width, height), Image.NEAREST)
+    return imgResized,labelImg
+
+def randomCropTrans(img,lbl,tw,th):
+
+    w, h = img.size
+    assert  w>=tw and h>=th# 确保height 和width大于256，因为256时我们要裁剪的大小
+    if w == tw and h == th:
+        return 0, 0, h, w
+
+    i = random.randint(0, h - th)
+    j = random.randint(0, w - tw)
+    imgCrop = img.crop((j,i,j+tw,i+th))
+    lblCrop = lbl.crop((j,i,j+tw,i+th))
+    return imgCrop,lblCrop
+
+def randomFlipAndRotate(img,lbl):
+    if random.random()<0.5:
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
+        lbl = lbl.transpose(Image.FLIP_LEFT_RIGHT)
+    if random.random()<0.5:
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        lbl = lbl.transpose(Image.FLIP_TOP_BOTTOM)
+    if random.random() < 0.5:
+        img = img.transpose(Image.ROTATE_90)
+        lbl = lbl.transpose(Image.ROTATE_90)
+    if random.random()<0.5:
+        img = img.transpose(Image.ROTATE_180)
+        lbl = lbl.transpose(Image.ROTATE_180)
+    if random.random()<0.5:
+        img = img.transpose(Image.ROTATE_270)
+        lbl =lbl.transpose(Image.ROTATE_270)
+    return img,lbl
+def randomHueBrightContrastShap(img,lbl=None):
+    if random.random()<0.5:
+        hue = random.uniform(0.9,1.5)#控制饱和度
+        img = ImageEnhance.Color(img).enhance(hue)
+
+        bri = random.uniform(0.8,1.2)#控制亮度
+        img = ImageEnhance.Brightness(img).enhance(bri)
+
+        con = random.uniform(0.8,1.2)#控制对比度
+        img = ImageEnhance.Contrast(img).enhance(con)
+
+        shap = random.uniform(0, 2)  # 控制锐度
+        img = ImageEnhance.Sharpness(img).enhance(shap)
+
+    return img,lbl
+
+def randomColorChange(img,lbl=None):#最后在做实验查看 感觉随机在某个通道上全部减少只是一种方式，而是要随机在各个像素 各个通道上减少某个很小的值
+    # imgArr = np.asarray(img)
+    # rVal = random.randint(-20,20)
+    # imgArr = [imgArr[i]+rVal for i in range(len(imgArr))]
+    if random.random() < 0.25:
+        img = img.point(lambda i:i+random.randint(-15,15))
+    return img,lbl
+
+def randomJpegCom(img,lbl=None):
+    pass
+
+def randomNoise(img,lbl=None):#PIL中没有找到怎么加噪声 所以用cv2实现
+    imgArr = np.asarray(img)
+    imgArr2 = imgArr.copy()
+    if random.random()<0.25:
+        for i in range(random.randint(50,200)):  # 添加点噪声
+            temp_x = np.random.randint(0, imgArr.shape[0])
+            temp_y = np.random.randint(0, imgArr.shape[1])
+            imgArr2[temp_x][temp_y] = random.randint(0,255)
+
+    return Image.fromarray(imgArr2),lbl
+
+def randomBlur(img,lbl=None):
+    if random.random()<0.5:
+        radius = random.randint(1,2)
+        img = img.filter(ImageFilter.GaussianBlur(radius))
+    return img,lbl
+
+
+def imageAug(imgPath,lblPath):
+    img = Image.open(imgPath)
+    lbl = Image.open(lblPath)
+
+    img1, lbl1 = randomResampleTrans(img, lbl)
+    img2, lbl2 = randomCropTrans(img1, lbl1, 256, 256)
+    img3, lbl3 = randomFlipAndRotate(img2, lbl2)
+    img4, lbl4 = randomHueBrightContrastShap(img3, lbl3)
+    img5, lbl5 = randomColorChange(img4, lbl4)
+    img6, lbl6 = randomNoise(img5, lbl5)
+    img7, lbl7 = randomBlur(img6, lbl6)
+    return img7,lbl7
+
+
+
+
+
+
+
+
 class UAVDataClassSeg(data.Dataset):
     """
     class_names = np.array([
@@ -122,11 +247,18 @@ class UAVDataClassSeg(data.Dataset):
 
         # 读取图片，为numpy格式
         im = Image.open(img_path)
-        # lbl是mat格式，mat格式的处理参考https://blog.csdn.net/qq_32425195/article/details/85202552
+
+
+        if self.train ==True:#如果是训练集
+            im,lbl =  imageAug(img_path,lbl_path)
+
+
+
 
         # load label
         if self.test !=True and lbl_path != None:
-            lbl = Image.open(lbl_path)
+            if self.train ==False:
+                lbl = Image.open(lbl_path)
             lbl = np.array(lbl, dtype=np.int32)
             lbl[lbl == 255] = -1
             lbl = (torch.from_numpy(lbl)).unsqueeze(0)
@@ -155,104 +287,6 @@ def RGBA2Grey(srcPath,dstPath,dstVisPath = None):
         scipy.misc.imsave(dstVisPath,_)
 
 
-def resample(imgPath,lblPath):
-    img = Image.open(imgPath)
-    imgResized = img.resize((700, 375), Image.ANTIALIAS)
-    imgResized.save('./2.JPEG')
-    img = Image.open(lblPath)
-    lblImmg2 = np.array(img)
-
-    labelImg = np.array(img.resize((700, 375), Image.NEAREST))
-
-    # Image.fromarray(labelImg).save(fp=ds, format='PNG')
-    _ = fcn.utils.label2rgb(lbl=labelImg, img = np.asarray(imgResized),label_names=['b', 'R', 'T', 'G', 'A', 'S', 'w', 'W', 'B', 'H'])
-    # if dstVisPath not None:
-    scipy.misc.imsave('./3.png', _)
-
-
-def randomResampleTrans(img,lbl):
-    height = random.randint(280,3000)
-    width = random.randint(int(0.7*height),int(min(2*height,4000)))
-    imgResized = img.resize((width, height), Image.ANTIALIAS)
-    labelImg = lbl.resize((width, height), Image.NEAREST)
-    return imgResized,labelImg
-
-def randomCropTrans(img,lbl,tw,th):
-
-    w, h = img.size
-    assert  w>=tw and h>=th# 确保height 和width大于256，因为256时我们要裁剪的大小
-    if w == tw and h == th:
-        return 0, 0, h, w
-
-    i = random.randint(0, h - th)
-    j = random.randint(0, w - tw)
-    imgCrop = img.crop((j,i,j+tw,i+th))
-    lblCrop = lbl.crop((j,i,j+tw,i+th))
-    return imgCrop,lblCrop
-
-def randomFlipAndRotate(img,lbl):
-    if random.random()<0.5:
-        img = img.transpose(Image.FLIP_LEFT_RIGHT)
-        lbl = lbl.transpose(Image.FLIP_LEFT_RIGHT)
-    if random.random()<0.5:
-        img = img.transpose(Image.FLIP_TOP_BOTTOM)
-        lbl = lbl.transpose(Image.FLIP_TOP_BOTTOM)
-    if random.random() < 0.5:
-        img = img.transpose(Image.ROTATE_90)
-        lbl = lbl.transpose(Image.ROTATE_90)
-    if random.random()<0.5:
-        img = img.transpose(Image.ROTATE_180)
-        lbl = lbl.transpose(Image.ROTATE_180)
-    if random.random()<0.5:
-        img = img.transpose(Image.ROTATE_270)
-        lbl =lbl.transpose(Image.ROTATE_270)
-    return img,lbl
-def randomHueBrightContrastShap(img,lbl=None):
-    if random.random()<0.5:
-        hue = random.uniform(0.9,1.5)#控制饱和度
-        img = ImageEnhance.Color(img).enhance(hue)
-
-        bri = random.uniform(0.8,1.2)#控制亮度
-        img = ImageEnhance.Brightness(img).enhance(bri)
-
-        con = random.uniform(0.8,1.2)#控制对比度
-        img = ImageEnhance.Contrast(img).enhance(con)
-
-        shap = random.uniform(0, 2)  # 控制锐度
-        img = ImageEnhance.Sharpness(img).enhance(shap)
-
-    return img,lbl
-
-def randomColorChange(img,lbl=None):#最后在做实验查看 感觉随机在某个通道上全部减少只是一种方式，而是要随机在各个像素 各个通道上减少某个很小的值
-    # imgArr = np.asarray(img)
-    # rVal = random.randint(-20,20)
-    # imgArr = [imgArr[i]+rVal for i in range(len(imgArr))]
-    if random.random() < 0.25:
-        img = img.point(lambda i:i+random.randint(-15,15))
-    return img,lbl
-
-def randomJpegCom(img,lbl=None):
-    pass
-
-def randomNoise(img,lbl=None):#PIL中没有找到怎么加噪声 所以用cv2实现
-    imgArr = np.asarray(img)
-    imgArr2 = imgArr.copy()
-    if random.random()<0.25:
-        for i in range(random.randint(50,200)):  # 添加点噪声
-            temp_x = np.random.randint(0, imgArr.shape[0])
-            temp_y = np.random.randint(0, imgArr.shape[1])
-            imgArr2[temp_x][temp_y] = random.randint(0,255)
-
-    return Image.fromarray(imgArr2),lbl
-
-def randomBlur(img,lbl=None):
-    if random.random()<0.5:
-        radius = random.randint(1,2)
-        img = img.filter(ImageFilter.GaussianBlur(radius))
-    return img,lbl
-
-
-
 
 
 
@@ -267,7 +301,7 @@ def randomBlur(img,lbl=None):
 
 if __name__ == '__main__':
 
-
+    """
     img = Image.open('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0200.JPG')
     lbl = Image.open('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/dst.png')
 
@@ -294,6 +328,7 @@ if __name__ == '__main__':
     RGBA2Grey('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/utils/PicOperation/splice.png',
               './dst.png','./dstVis.png')
     """
+    """
     测试数据集类是否正确，
     初始化
     遍历
@@ -311,12 +346,16 @@ if __name__ == '__main__':
                  visualizations.append(viz)
 
     scipy.misc.imsave('./visualization_viz.jpg', fcn.utils.get_tile_image(visualizations))
-"""
+    """
     """
     测试test集的数据是否可以
     """
-    trainDataset = UAVDataClassSeg(txt_path = './test.txt',train=False,test=True)
+    trainDataset = UAVDataClassSeg(txt_path = '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/validFull.txt',train=False,test=False)
     trainloader = DataLoader(trainDataset, batch_size=1, shuffle=True, drop_last=True)
     for batch_idx, (data, target) in enumerate(trainloader):
-        img, lt = trainDataset.untransform(data[0])#data中包含的图片的数目由Dataloader的batch_size决定，data[0]表示第一张图片
+        img, lt = trainDataset.untransform(data[0],target[0])#data中包含的图片的数目由Dataloader的batch_size决定，data[0]表示第一张图片
         Image.fromarray(img).save('./1.jpg', 'JPEG')
+        _ = fcn.utils.label2rgb(lbl=(np.asarray(lt)), img=np.asarray(img),
+                                label_names=['b', 'R', 'T', 'G', 'A', 'S', 'w', 'W', 'B', 'H'])
+        # if dstVisPath not None:
+        scipy.misc.imsave('./2.png', _)
