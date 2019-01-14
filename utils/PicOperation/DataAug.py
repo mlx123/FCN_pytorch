@@ -141,6 +141,14 @@ def resampling(image_sets,width,height,picPath,dstPath):
 
 
 if __name__ == '__main__':
+
+
+
+
+
+
+
+
     """
     用法如下：
     1.将目录下的文件生成列表
