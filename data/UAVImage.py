@@ -43,8 +43,9 @@ def resample(imgPath,lblPath):
 
 
 def randomResampleTrans(img,lbl):
-    height = random.randint(280,3000)
-    width = random.randint(int(0.7*height),int(min(2*height,4000)))
+    ratio = img.size[0]/img.size[1]
+    height = random.randint(int(max(260,260/(1.5*ratio))),img.size[1])
+    width = random.randint(int(max(0.7*ratio*height,260)),int(min(1.5*ratio*height+1,img.size[0])))
     imgResized = img.resize((width, height), Image.ANTIALIAS)
     labelImg = lbl.resize((width, height), Image.NEAREST)
     return imgResized,labelImg
@@ -81,15 +82,15 @@ def randomFlipAndRotate(img,lbl):
     return img,lbl
 def randomHueBrightContrastShap(img,lbl=None):
     if random.random()<0.5:
-        hue = random.uniform(0.9,1.5)#控制饱和度
+        hue = random.uniform(0.9,1.2)#控制饱和度
         img = ImageEnhance.Color(img).enhance(hue)
-
+    if random.random() < 0.5:
         bri = random.uniform(0.8,1.2)#控制亮度
         img = ImageEnhance.Brightness(img).enhance(bri)
-
+    if random.random() < 0.5:
         con = random.uniform(0.8,1.2)#控制对比度
         img = ImageEnhance.Contrast(img).enhance(con)
-
+    if random.random() < 0.5:
         shap = random.uniform(0, 2)  # 控制锐度
         img = ImageEnhance.Sharpness(img).enhance(shap)
 
@@ -118,7 +119,7 @@ def randomNoise(img,lbl=None):#PIL中没有找到怎么加噪声 所以用cv2实
     return Image.fromarray(imgArr2),lbl
 
 def randomBlur(img,lbl=None):
-    if random.random()<0.5:
+    if random.random()<0.2:
         radius = random.randint(1,2)
         img = img.filter(ImageFilter.GaussianBlur(radius))
     return img,lbl
@@ -300,6 +301,102 @@ def RGBA2Grey(srcPath,dstPath,dstVisPath = None):
 
 
 if __name__ == '__main__':
+
+    srcImg = ['0.JPG','1.JPG','2.JPG','3.JPG','DJI_0176.jpg','DJI_0179.jpg','DJI_0202.jpg','DJI_0205.jpg','DJI_0208.jpg','DJI_0209.jpg','DJI_0210.jpg','DJI_0213.jpg','DJI_0242.jpg','DJI_0262.jpg','DJI_0298.jpg','DJI_0300.jpg','DJI_0332.jpg','DJI_0179_2.jpg']
+    lblImg = ['0.png','1.png','2.png','3.png','lDJI_0176.png','lDJI_0179.png','lDJI_0202.png','lDJI_0205.png','lDJI_0208.png','lDJI_0209.png','lDJI_0210.png','lDJI_0213.png','lDJI_0242.png','lDJI_0262.png','lDJI_0298.png','lDJI_0300.png','lDJI_0332.png','lDJI_0179_2.png']
+    for j in range(len(srcImg)):
+        for i in range(1000//len(srcImg)):
+            img, lbl = imageAug('./data/' + srcImg[j], './data/' + lblImg[j])
+            img.save('./data/valid/' + str(j * (1000//len(srcImg)) + i) + '.JPG')
+            lbl.save('./data/valid/' + str(j * (1000//len(srcImg)) + i) + '.png')
+            # Image.fromarray(labelImg).save(fp=ds, format='PNG')
+            _ = fcn.utils.label2rgb(lbl=np.asarray(lbl), img=np.asarray(img),
+                                    label_names=['b', 'R', 'T', 'G', 'A', 'S', 'w', 'W', 'B', 'H'])
+            # if dstVisPath not None:
+            scipy.misc.imsave('./data/valid/' + str(j * (1000//len(srcImg)) + i) + '_vis.JPG', _)
+
+    RGBA2Grey('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0176.png',
+              '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0176.png', '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0176_vis.png')
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0179.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0179.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0179_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0179_2.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0179_2.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0179_2_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0202.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0202.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0202_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0205.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0205.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0205_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0208.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0208.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0208_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0208.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0208.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0208_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0209.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0209.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0209_vis.png')
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0210.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0210.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0210_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0213.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0213.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0213_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0242.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0242.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0242_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0262.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0262.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0262_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0298.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0298.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0298_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0300.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0300.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0300_vis.png')
+
+    RGBA2Grey(
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/DJI_0332.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0332.png',
+        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/抠图/ktl/grey/DJI_0332_vis.png')
+
+
+
+    for j in range(4):
+        for i in range(250):
+            img,lbl = imageAug('./data/'+str(j)+'.JPG','./data/'+str(j)+'.png')
+            img.save('./data/valid/'+str(j*250+i)+'.JPG')
+            lbl.save('./data/valid/'+str(j*250+i)+'.png')
+
+
+    RGBA2Grey('./spliceDJI0200.png',
+              './dstDJI0200.png', './dstVisDJI0200.png')
 
     """
     img = Image.open('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/DJI_0200.JPG')

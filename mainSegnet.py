@@ -89,7 +89,7 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
     model = models.segnet(n_classes=10)
     utils.ModelLoad(loadRoot=modelPth,model=model)
     # import data
-    testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Resample200*1500/resampleWidth*Height.txt',
+    testDataset = data.UAVDataClassSeg('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Resample200*1500/1.txt',
                                        train=False,test = True)
     testLoader = DataLoader(testDataset, batch_size=1, shuffle=False)
 
@@ -120,13 +120,13 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
 def train():
     # Setup Dataloader,训练集和验证集数据,决定了如分类类别等
     train_dataset = data.UAVDataClassSeg(
-        txt_path='/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/train/trainFull.txt')
-    trainloader = DataLoader(train_dataset, batch_size=12, shuffle=True, drop_last=True)
+        txt_path='/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/data/train2.txt')
+    trainloader = DataLoader(train_dataset, batch_size=12, shuffle=True, drop_last=True,num_workers=24,pin_memory=True)
     val_dataset = data.UAVDataClassSeg(
-        '/home/mlxuan/project/DeepLearning/data/image_Segmentation/dataAug/valid/validFull.txt', train=False)
+        '/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/data/valid/valid.txt', train=False)
     valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
-    # Setup device
+    # Setup device89
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -167,13 +167,16 @@ def train():
 
     optim = torch.optim.Adam(
            params=model.parameters(),
-        lr=1.0e-5,
+        lr=1.0e-3,
         weight_decay=0.0005)
     #定义学习率调整策略
     scheduler = lr_scheduler.ReduceLROnPlateau(optim, mode='min', patience=1,min_lr=10e-10,eps=10e-9)  # min表示当指标不在降低时，patience表示可以容忍的step次数
 
-    # utils.ModelLoad('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output/Model.path/20181227_220035.852449model_best.pth.tar',model,optim)
-
+    # utils.ModelLoad('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/bestModel/1.4000*3000_trainModel.tar',
+    #                  model)
+    now = datetime.datetime.now()
+    logFile = utils.Log(osp.join('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/visualization_viz/',now.strftime('%Y%m%d_%H%M%S.%f')+'log.csv'),
+                        ['iteration','train/loss','train/mean_iu','valid/loss','valid/mean_iu','lr'])
     trainer = models.Trainer(
         cuda =True,
         model=model,
@@ -184,7 +187,8 @@ def train():
         out='./output_segnet/',
         max_iter=100000,
         scheduler = scheduler,
-        interval_validate=800
+        interval_validate=800,
+        logFile=logFile
     )
     trainer.train()#进入训练
 
@@ -192,6 +196,6 @@ def train():
 
 
 if __name__ == '__main__':
-    # train()
+    train()
     # ModelStatics('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
-   valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
+    # valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190116_215702.839481model_best.pth.tar','','',cuda=True)

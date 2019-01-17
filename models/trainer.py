@@ -27,7 +27,7 @@ import utils
 class Trainer(object):
 
     def __init__(self, cuda, model, optimizer,loss_fcn, scheduler,
-                 train_loader, val_loader, out, max_iter,
+                 train_loader, val_loader, out, max_iter,logFile,
                  size_average=False, interval_validate=None):
         """
 
@@ -69,6 +69,7 @@ class Trainer(object):
         self.trainMeanIu = 0
 
         self.best_mean_iu = 0
+        self.logFile = logFile
 
         if interval_validate is None:
             self.interval_validate = len(self.train_loader)
@@ -103,7 +104,7 @@ class Trainer(object):
 
             loss = self.loss_fcn(score, target, weight=None, size_average=False)
             loss_data = loss.data.item()
-            val_loss += loss / len(data)
+            val_loss += loss_data / len(data)
 
             imgs = data.data.cpu()
             lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
@@ -146,6 +147,10 @@ class Trainer(object):
             shutil.copy(osp.join(self.out, now.strftime('%Y%m%d_%H%M%S.%f')+'checkpoint.pth.tar'),
                         osp.join(self.out, now.strftime('%Y%m%d_%H%M%S.%f')+'model_best.pth.tar'))
 
+        #将关心数据保存为csv格式
+        log = [0,0,0,val_loss,mean_iu,self.optim.param_groups[0]['lr']]
+        self.logFile.write(','.join(map(str,log)))
+
         self.model.train()
 
 
@@ -163,7 +168,7 @@ class Trainer(object):
 
                 print('train' + ' epoch:'+str(self.epoch) + '   batch_idx:'+str(batch_idx))
                 iteration = batch_idx + self.epoch * len(self.train_loader)  # 将每个batch看做一次iteration,此处表示是第几个iteration
-                if iteration % self.interval_validate ==0:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
+                if iteration % self.interval_validate ==799:#表示迭代训练interval_validate次后就要验证数据集，验证集的数据与训练集一致，用于评价模型的泛华能力，调整超参数
                     self.validate()
 
                 assert self.model.training  # 判断当前是否处于训练模式中
@@ -177,7 +182,7 @@ class Trainer(object):
                 self.optim.step()
 
                 # 做几次或者每次都更新统计指标并可视化,此处时每做10次可视化一下效果
-                if batch_idx%10 ==0:
+                if iteration%100 == 0:
                     metrics = []
                     lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]  # 将该像素得分最高的类看做该像素所属于的类别，所有的像素组成分类图
                     lbl_true = target.data.cpu().numpy()  # 人为标定的分类图
@@ -190,9 +195,18 @@ class Trainer(object):
                     # 将上述标量可视化
                     self.train_loss = loss_data
                     self.iteration = iteration
-                    self.train_acc = acc
-                    self.TrainMeanIu = mean_iu
+                    self.train_acc = metrics.tolist()[0]
+                    self.TrainMeanIu = metrics.tolist()[2]
                     self.plotModelScalars()
+
+                    # 将关心数据保存为csv格式
+                    log = [iteration, self.train_loss, self.TrainMeanIu, 0,0, self.optim.param_groups[0]['lr']]
+                    log = map(str, log)
+                    self.logFile.write(log)
+
+                    self.model.train()
+
+
 
     def train(self):
         max_epoch = int(math.ceil(1. * self.max_iter / len(self.train_loader)))

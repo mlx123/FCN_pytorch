@@ -72,14 +72,14 @@ def SpliceImages(imagePathSets,rows,cols,dstPath):
         for j in range(cols):
             target.paste(imageSets[i*rows+j],(j*400,i*300,j*400+400,i*300+300))
 
-    target.save('./splice.png')
+    target.save('./spliceDJI0287.png')
 
 
 
 
 if __name__ == '__main__':
     imageSets = []
-    with open('/media/mlxuan/mlx/DeepLearningData/大邑数据/DJI_0200/1.txt','r') as fh:
+    with open('/home/mlxuan/project/DeepLearning/data/image_Segmentation/js-segment-annotator-master/data/images/Split/0287.txt','r') as fh:
         for line in fh:
             line = line.rstrip()
             imageSets.append(line)
