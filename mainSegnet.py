@@ -120,8 +120,8 @@ def valModel(modelPth,valImagLoader,outImg,cuda=True):
 def train():
     # Setup Dataloader,训练集和验证集数据,决定了如分类类别等
     train_dataset = data.UAVDataClassSeg(
-        txt_path='/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/data/train2.txt')
-    trainloader = DataLoader(train_dataset, batch_size=12, shuffle=True, drop_last=True,num_workers=24,pin_memory=True)
+        txt_path='/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/data/train.txt')
+    trainloader = DataLoader(train_dataset, batch_size=16, shuffle=True, drop_last=True,num_workers=24,pin_memory=True)
     val_dataset = data.UAVDataClassSeg(
         '/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/data/data/valid/valid.txt', train=False)
     valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
@@ -167,7 +167,7 @@ def train():
 
     optim = torch.optim.Adam(
            params=model.parameters(),
-        lr=1.0e-3,
+        lr=1.0e-5,
         weight_decay=0.0005)
     #定义学习率调整策略
     scheduler = lr_scheduler.ReduceLROnPlateau(optim, mode='min', patience=1,min_lr=10e-10,eps=10e-9)  # min表示当指标不在降低时，patience表示可以容忍的step次数
@@ -188,7 +188,7 @@ def train():
         max_iter=100000,
         scheduler = scheduler,
         interval_validate=800,
-        logFile=logFile
+        # logFile=logFile
     )
     trainer.train()#进入训练
 
@@ -196,6 +196,6 @@ def train():
 
 
 if __name__ == '__main__':
-    train()
+    # train()
     # ModelStatics('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190111_124455.109984model_best.pth.tar','','',cuda=True)
-    # valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190116_215702.839481model_best.pth.tar','','',cuda=True)
+    valModel('/home/mlxuan/project/DeepLearning/FCN/fcn_mlx/output_segnet/20190117_175945.642729model_best.pth.tar','','',cuda=True)
