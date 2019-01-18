@@ -116,7 +116,7 @@ class Trainer(object):
                 img, lt =self.val_loader.dataset.untransform(img, lt)
                 label_trues.append(lt)
                 label_preds.append(lp)
-                if len(visualizations) < 15:
+                if len(visualizations) < 15*5:
                     viz = fcn.utils.visualize_segmentation(
                         lbl_pred=lp, lbl_true=lt, img=img, n_class=n_class)
                     visualizations.append(viz)
@@ -134,11 +134,14 @@ class Trainer(object):
 
 
         #保存相关的数据
-        out = osp.join(self.out, 'visualization_viz')
-        if not osp.exists(out):
-            os.makedirs(out)
-        out_file = osp.join(out, 'iter%012d.jpg' % self.iteration)
-        scipy.misc.imsave(out_file, fcn.utils.get_tile_image(visualizations))
+        for i in range(5):
+            out = osp.join(self.out, 'visualization_viz')
+            if not osp.exists(out):
+                os.makedirs(out)
+            out_file = osp.join(out, str(i)+'iter%012d.jpg' % self.iteration)
+            scipy.misc.imsave(out_file, fcn.utils.get_tile_image(visualizations[15*i:15*i+15]))
+
+
 
         now = datetime.datetime.now()
         utils.ModelSave(model=self.model,optim = self.optim,saveRoot=osp.join(self.out,now.strftime('%Y%m%d_%H%M%S.%f')+'checkpoint.pth.tar'),epoch= self.epoch,iteration = self.iteration)
@@ -149,7 +152,8 @@ class Trainer(object):
 
         #将关心数据保存为csv格式
         log = [0,0,0,val_loss,mean_iu,self.optim.param_groups[0]['lr']]
-        self.logFile.write(','.join(map(str,log)))
+        log = map(str,log)
+        self.logFile.write(log)
 
         self.model.train()
 
@@ -196,11 +200,11 @@ class Trainer(object):
                     self.train_loss = loss_data
                     self.iteration = iteration
                     self.train_acc = metrics.tolist()[0]
-                    self.TrainMeanIu = metrics.tolist()[2]
+                    self.trainMeanIu = metrics.tolist()[2]
                     self.plotModelScalars()
 
                     # 将关心数据保存为csv格式
-                    log = [iteration, self.train_loss, self.TrainMeanIu, 0,0, self.optim.param_groups[0]['lr']]
+                    log = [iteration, self.train_loss, self.trainMeanIu, 0,0, self.optim.param_groups[0]['lr']]
                     log = map(str, log)
                     self.logFile.write(log)
 

@@ -44,8 +44,8 @@ def resample(imgPath,lblPath):
 
 def randomResampleTrans(img,lbl):
     ratio = img.size[0]/img.size[1]
-    height = random.randint(int(max(260,260/(1.5*ratio))),img.size[1])
-    width = random.randint(int(max(0.7*ratio*height,260)),int(min(1.5*ratio*height+1,img.size[0])))
+    height = random.randint(int(max(350,350/(1.5*ratio))),img.size[1])
+    width = random.randint(int(max(0.7*ratio*height,350)),int(min(1.5*ratio*height+1,img.size[0])))
     imgResized = img.resize((width, height), Image.ANTIALIAS)
     labelImg = lbl.resize((width, height), Image.NEAREST)
     return imgResized,labelImg
@@ -101,7 +101,7 @@ def randomColorChange(img,lbl=None):#最后在做实验查看 感觉随机在某
     # rVal = random.randint(-20,20)
     # imgArr = [imgArr[i]+rVal for i in range(len(imgArr))]
     if random.random() < 0.25:
-        img = img.point(lambda i:i+random.randint(-15,15))
+        img = img.point(lambda i:i+random.randint(-10,10))
     return img,lbl
 
 def randomJpegCom(img,lbl=None):
@@ -111,7 +111,7 @@ def randomNoise(img,lbl=None):#PIL中没有找到怎么加噪声 所以用cv2实
     imgArr = np.asarray(img)
     imgArr2 = imgArr.copy()
     if random.random()<0.25:
-        for i in range(random.randint(50,200)):  # 添加点噪声
+        for i in range(random.randint(1,100)):  # 添加点噪声
             temp_x = np.random.randint(0, imgArr.shape[0])
             temp_y = np.random.randint(0, imgArr.shape[1])
             imgArr2[temp_x][temp_y] = random.randint(0,255)
@@ -119,7 +119,7 @@ def randomNoise(img,lbl=None):#PIL中没有找到怎么加噪声 所以用cv2实
     return Image.fromarray(imgArr2),lbl
 
 def randomBlur(img,lbl=None):
-    if random.random()<0.2:
+    if random.random()<0.1:
         radius = random.randint(1,2)
         img = img.filter(ImageFilter.GaussianBlur(radius))
     return img,lbl
@@ -130,7 +130,7 @@ def imageAug(imgPath,lblPath):
     lbl = Image.open(lblPath)
 
     img1, lbl1 = randomResampleTrans(img, lbl)
-    img2, lbl2 = randomCropTrans(img1, lbl1, 256, 256)
+    img2, lbl2 = randomCropTrans(img1, lbl1, 300, 300)
     img3, lbl3 = randomFlipAndRotate(img2, lbl2)
     img4, lbl4 = randomHueBrightContrastShap(img3, lbl3)
     img5, lbl5 = randomColorChange(img4, lbl4)
